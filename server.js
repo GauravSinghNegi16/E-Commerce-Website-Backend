@@ -18,8 +18,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-const PORT = process.env.PORT || 5000;
-
 // =====================
 // ROOT TEST ROUTE
 // =====================
@@ -43,9 +41,11 @@ app.post("/api/register", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({ name, email, password: hashedPassword });
 
-    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
     res.status(201).json({ token, user });
   } catch (err) {
@@ -64,9 +64,11 @@ app.post("/api/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
     res.json({ token, user });
   } catch (err) {
@@ -161,8 +163,9 @@ app.post("/api/cart", auth, async (req, res) => {
     let cart = await Cart.findOne({ user: userId });
     if (!cart) cart = new Cart({ user: userId, items: [] });
 
-    // Only add if it doesn't exist
-    const exists = cart.items.find((item) => item.product.toString() === productId);
+    const exists = cart.items.find(
+      (item) => item.product.toString() === productId
+    );
     if (!exists) {
       cart.items.push({
         product: product._id,
@@ -221,10 +224,7 @@ app.delete("/api/cart", auth, async (req, res) => {
 });
 
 // =====================
-// START SERVER
+// EXPORT APP FOR VERCEL
 // =====================
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-  });
-});
+connectDB();
+module.exports = app;
